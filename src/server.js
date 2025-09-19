@@ -24,6 +24,10 @@ app.use(
     },
   }),
 );
+app.get('/', (_req, res) => {
+  res.status(200).json({ ok: true, message: 'Service is up' });
+});
+app.get('/healthz', (_req, res) => res.status(200).send('ok'));
 
 app.get('/notes', (req, res) => {
   res.status(200).json({ message: 'Retrieved all notes' });

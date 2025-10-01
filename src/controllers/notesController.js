@@ -4,36 +4,30 @@ import { Note } from '../models/note.js';
 export const getAllNotes = async (req, res, next) => {
   try {
     const { page = 1, perPage = 10, tag, search } = req.query;
-    const pageNum = Math.max(1, Number(page) || 1);
-    const perPageNum = Math.min(100, Math.max(1, Number(perPage) || 10));
-    const skip = (pageNum - 1) * perPageNum;
+    const skip = (page - 1) * perPage;
 
-    const filter = { userId: req.user._id };
-
-    if (tag) filter.tag = tag;
-
+    const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const hasSearch = typeof search === 'string' && search.trim() !== '';
-    if (hasSearch) {
-      const esc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const rx = new RegExp(esc(search.trim()), 'i');
-      filter.$or = [{ title: rx }, { content: rx }];
-    }
+    const rx = hasSearch ? new RegExp(esc(search.trim()), 'i') : null;
+
+    let notesQuery = Note.find().where('userId').equals(req.user._id);
+    if (tag) notesQuery = notesQuery.where('tag').equals(tag);
+    if (hasSearch) notesQuery = notesQuery.or([{ title: rx }, { content: rx }]);
+
+    let countQuery = Note.countDocuments().where('userId').equals(req.user._id);
+    if (tag) countQuery = countQuery.where('tag').equals(tag);
+    if (hasSearch) countQuery = countQuery.or([{ title: rx }, { content: rx }]);
 
     const [totalNotes, notes] = await Promise.all([
-      Note.countDocuments(filter).exec(),
-      Note.find(filter)
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(perPageNum)
-        .lean()
-        .exec(),
+      countQuery.exec(),
+      notesQuery.skip(skip).limit(perPage).lean().exec(),
     ]);
 
-    const totalPages = Math.max(1, Math.ceil(totalNotes / perPageNum));
+    const totalPages = Math.max(1, Math.ceil(totalNotes / perPage));
 
-    res.status(200).json({
-      page: pageNum,
-      perPage: perPageNum,
+    return res.status(200).json({
+      page,
+      perPage,
       totalNotes,
       totalPages,
       notes,

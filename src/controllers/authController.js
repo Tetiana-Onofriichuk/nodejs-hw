@@ -45,7 +45,7 @@ export const loginUser = async (req, res, next) => {
     return next(createHttpError(401, 'Invalid credentials'));
   }
 
-  await Session.deleteOne({ userId: user._id });
+  await Session.deleteMany({ userId: user._id });
 
   const newSession = await createSession(user._id);
 
@@ -54,18 +54,22 @@ export const loginUser = async (req, res, next) => {
   res.status(200).json(user);
 };
 
-export const logoutUser = async (req, res) => {
-  const { sessionId } = req.cookies;
+export const logoutUser = async (req, res, next) => {
+  try {
+    const { sessionId } = req.cookies;
 
-  if (sessionId) {
-    await Session.deleteOne({ _id: sessionId });
+    if (sessionId) {
+      await Session.deleteOne({ _id: sessionId });
+    }
+
+    res.clearCookie('sessionId');
+    res.clearCookie('accessToken');
+    res.clearCookie('refreshToken');
+
+    return res.sendStatus(204);
+  } catch (err) {
+    return next(err);
   }
-
-  res.clearCookie('sessionId');
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
-
-  res.status(204).send();
 };
 
 export const refreshUserSession = async (req, res, next) => {
@@ -124,7 +128,8 @@ export const requestResetEmail = async (req, res, next) => {
 
     const link = `${process.env.FRONTEND_DOMAIN}/reset-password?token=${token}`;
     const name =
-      user.username?.trim() || user.name?.trim() || email.split('@')[0];
+      (typeof user.username === 'string' && user.username.trim()) ||
+      email.split('@')[0];
 
     const html = renderResetEmail({ name, link });
 

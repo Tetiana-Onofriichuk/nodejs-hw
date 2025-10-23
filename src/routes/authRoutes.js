@@ -7,6 +7,7 @@ import {
   registerUser,
   requestResetEmail,
   resetPassword,
+  checkSession,
 } from '../controllers/authController.js';
 import {
   loginUserSchema,
@@ -31,4 +32,5 @@ router.post(
   celebrate(resetPasswordSchema),
   resetPassword,
 );
+router.get('/auth/session', checkSession);
 export default router;

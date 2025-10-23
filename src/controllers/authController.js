@@ -172,3 +172,51 @@ export const resetPassword = async (req, res, next) => {
     message: 'Password reset successfully. Please log in again.',
   });
 };
+
+export const checkSession = async (req, res, next) => {
+  try {
+    const { sessionId, accessToken } = req.cookies;
+
+    // Якщо немає жодного cookie — користувач не авторизований
+    if (!sessionId || !accessToken) {
+      return res
+        .status(401)
+        .json({ success: false, message: 'Not authenticated' });
+    }
+
+    // Знаходимо сесію в базі
+    const session = await Session.findById(sessionId);
+    if (!session) {
+      return res
+        .status(401)
+        .json({ success: false, message: 'Session not found' });
+    }
+
+    // Перевіряємо чи сесія ще дійсна
+    const isExpired = new Date() > new Date(session.accessTokenValidUntil);
+    if (isExpired) {
+      return res
+        .status(401)
+        .json({ success: false, message: 'Session expired' });
+    }
+
+    // Знаходимо користувача
+    const user = await User.findById(session.userId);
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'User not found' });
+    }
+
+    // Якщо все добре — повертаємо true
+    return res.status(200).json({
+      success: true,
+      user: {
+        id: user._id,
+        email: user.email,
+      },
+    });
+  } catch {
+    next(createHttpError(500, 'Failed to verify session'));
+  }
+};

@@ -1,3 +1,5 @@
+// authController.js;
+
 import bcrypt from 'bcrypt';
 import createHttpError from 'http-errors';
 import { User } from '../models/user.js';
@@ -61,9 +63,13 @@ export const logoutUser = async (req, res) => {
     await Session.deleteOne({ _id: sessionId });
   }
 
-  res.clearCookie('sessionId');
-  res.clearCookie('accessToken');
-  res.clearCookie('refreshToken');
+  res.clearCookie('sessionId', { path: '/', sameSite: 'none', secure: true });
+  res.clearCookie('accessToken', { path: '/', sameSite: 'none', secure: true });
+  res.clearCookie('refreshToken', {
+    path: '/',
+    sameSite: 'none',
+    secure: true,
+  });
 
   res.status(204).send();
 };

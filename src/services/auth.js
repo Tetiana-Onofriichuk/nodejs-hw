@@ -18,24 +18,26 @@ export const createSession = async (userId) => {
 };
 
 export const setSessionCookies = (res, session) => {
-  res.cookie('accessToken', session.accessToken, {
+  const cookieBase = {
     httpOnly: true,
     secure: true,
     sameSite: 'none',
+    path: '/', // ✅ обов’язково
+  };
+
+  res.cookie('accessToken', session.accessToken, {
+    ...cookieBase,
     maxAge: FIFTEEN_MINUTES,
   });
 
   res.cookie('refreshToken', session.refreshToken, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+    ...cookieBase,
     maxAge: ONE_DAY,
   });
 
-  res.cookie('sessionId', session._id, {
-    httpOnly: true,
-    secure: true,
-    sameSite: 'none',
+  res.cookie('sessionId', session._id.toString(), {
+    // ✅ .toString()
+    ...cookieBase,
     maxAge: ONE_DAY,
   });
 };

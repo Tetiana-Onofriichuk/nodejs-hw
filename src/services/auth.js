@@ -1,5 +1,3 @@
-// src/services/auth.js
-
 import crypto from 'crypto';
 import { FIFTEEN_MINUTES, ONE_DAY } from '../constants/time.js';
 import { Session } from '../models/session.js';
@@ -18,11 +16,13 @@ export const createSession = async (userId) => {
 };
 
 export const setSessionCookies = (res, session) => {
+  const isProd = process.env.NODE_ENV === 'production';
+
   const cookieBase = {
     httpOnly: true,
-    secure: true,
-    sameSite: 'none',
-    path: '/', // ✅ обов’язково
+    secure: isProd, // локально false, у проді true
+    sameSite: isProd ? 'none' : 'lax', // локально 'lax', у проді 'none'
+    path: '/', // ОБОВ'ЯЗКОВО
   };
 
   res.cookie('accessToken', session.accessToken, {
@@ -35,8 +35,8 @@ export const setSessionCookies = (res, session) => {
     maxAge: ONE_DAY,
   });
 
+  // важливо привести _id до рядка
   res.cookie('sessionId', session._id.toString(), {
-    // ✅ .toString()
     ...cookieBase,
     maxAge: ONE_DAY,
   });

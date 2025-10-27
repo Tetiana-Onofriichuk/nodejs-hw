@@ -22,7 +22,7 @@ app.set('trust proxy', 1);
 // 🌐 CORS — ставимо ЯКНАЙВИЩЕ, до всіх роутів
 const FRONT_ORIGINS = [
   'http://localhost:3000',
-  'https://09-auth-six-navy.vercel.app',
+  'https://09-auth-wine-seven.vercel.app',
 ];
 
 app.use(
